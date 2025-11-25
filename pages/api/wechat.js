@@ -9,9 +9,31 @@ const openai = new OpenAI({
 const WECHAT_TOKEN = process.env.WECHAT_TOKEN;
 
 function validateWeChatSignature(signature, timestamp, nonce) {
+  console.log('=== SIGNATURE VERIFICATION ===');
+  console.log('Current time:', Math.floor(Date.now() / 1000));
+  console.log('WeChat timestamp:', timestamp);
+  
+  // Check if timestamp is within 5 minutes (WeChat requirement)
+  const currentTime = Math.floor(Date.now() / 1000);
+  const timeDiff = Math.abs(currentTime - parseInt(timestamp));
+  console.log('Time difference (seconds):', timeDiff);
+  
+  if (timeDiff > 300) { // 5 minutes
+    console.log('ERROR: Timestamp too old or in future');
+    return false;
+  }
+  
   const arr = [WECHAT_TOKEN, timestamp, nonce].sort();
   const str = arr.join('');
   const hash = crypto.createHash('sha1').update(str).digest('hex');
+  
+  console.log('Token used:', WECHAT_TOKEN);
+  console.log('Sorted array:', arr);
+  console.log('String to hash:', str);
+  console.log('Calculated hash:', hash);
+  console.log('Received signature:', signature);
+  console.log('Match:', hash === signature);
+  
   return hash === signature;
 }
 
@@ -67,17 +89,20 @@ async function getAIResponse(userMessage) {
   }
 }
 
-export default async function handler(req, res) {
-  const { method } = req;
-
   if (method === 'GET') {
     const { signature, timestamp, nonce, echostr } = req.query;
     
+    console.log('=== WECHAT VERIFICATION REQUEST ===');
+    console.log('Signature:', signature);
+    console.log('Timestamp:', timestamp);
+    console.log('Nonce:', nonce);
+    console.log('Echostr:', echostr);
+    
     if (validateWeChatSignature(signature, timestamp, nonce)) {
-      console.log('WeChat verification successful');
+      console.log('WeChat verification SUCCESSFUL');
       res.send(echostr);
     } else {
-      console.log('WeChat verification failed');
+      console.log('WeChat verification FAILED');
       res.status(403).send('Invalid signature');
     }
     return;
@@ -119,3 +144,4 @@ export default async function handler(req, res) {
 
   res.status(405).json({ error: 'Method not allowed' });
 }
+
