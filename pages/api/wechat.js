@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import { parseString } from 'xml2js';
-
-const OpenAI = require('openai');
+import OpenAI from 'openai';  // Fixed this line
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -86,7 +85,7 @@ export default async function handler(req, res) {
 
   if (method === 'POST') {
     try {
-      console.log('Received message from customer');
+      console.log('=== WECHAT MESSAGE RECEIVED ===');
       
       const message = await parseWeChatMessage(req);
       console.log('Customer message:', message.Content);
@@ -99,11 +98,19 @@ export default async function handler(req, res) {
       res.setHeader('Content-Type', 'application/xml');
       res.send(responseXml);
       
-      console.log('Response sent to customer');
+      console.log('=== RESPONSE SENT ===');
     } catch (error) {
       console.error('Error handling message:', error);
-      const message = await parseWeChatMessage(req);
-      const errorResponse = buildTextResponse(message, "Sorry, I'm having technical issues. Please try again later.");
+      // Send a simple error response without trying to parse again
+      const errorResponse = `
+<xml>
+  <ToUserName><![CDATA[${req.body?.FromUserName || 'user'}]]></ToUserName>
+  <FromUserName><![CDATA[${req.body?.ToUserName || 'server'}]]></FromUserName>
+  <CreateTime>${Math.floor(Date.now() / 1000)}</CreateTime>
+  <MsgType><![CDATA[text]]></MsgType>
+  <Content><![CDATA[Sorry, I'm having technical issues. Please try again later.]]></Content>
+</xml>
+      `.trim();
       res.setHeader('Content-Type', 'application/xml');
       res.send(errorResponse);
     }
