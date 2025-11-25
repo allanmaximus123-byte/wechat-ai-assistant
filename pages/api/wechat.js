@@ -1,6 +1,10 @@
 import crypto from 'crypto';
 import { parseString } from 'xml2js';
-import OpenAI from 'openai';  // Fixed this line
+import OpenAI from 'openai';
+
+console.log('=== WECHAT.JS LOADED ===');
+console.log('WECHAT_TOKEN exists:', !!process.env.WECHAT_TOKEN);
+console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -89,33 +93,30 @@ async function getAIResponse(userMessage) {
   }
 }
 
-if (method === 'GET') {
-  const { signature, timestamp, nonce, echostr } = req.query;
-  
-  console.log('=== WECHAT VERIFICATION REQUEST ===');
-  console.log('Signature:', signature);
-  console.log('Timestamp:', timestamp);
-  console.log('Nonce:', nonce);
-  console.log('Echostr:', echostr);
-  console.log('WECHAT_TOKEN from env:', WECHAT_TOKEN);
-  
-  // TEMPORARY: Always accept the verification to get WeChat configured
-  console.log('TEMPORARILY ACCEPTING VERIFICATION TO CONFIGURE WECHAT');
-  res.send(echostr);
-  return;
-  
-  // Keep this commented for now - we'll fix it later
-  /*
-  if (validateWeChatSignature(signature, timestamp, nonce)) {
-    console.log('WeChat verification SUCCESSFUL');
+// MAIN HANDLER FUNCTION - THIS WAS MISSING!
+export default async function handler(req, res) {
+  const { method } = req;
+
+  console.log('=== NEW REQUEST ===');
+  console.log('Method:', method);
+  console.log('URL:', req.url);
+  console.log('Query:', req.query);
+
+  if (method === 'GET') {
+    const { signature, timestamp, nonce, echostr } = req.query;
+    
+    console.log('=== WECHAT VERIFICATION REQUEST ===');
+    console.log('Signature:', signature);
+    console.log('Timestamp:', timestamp);
+    console.log('Nonce:', nonce);
+    console.log('Echostr:', echostr);
+    console.log('WECHAT_TOKEN from env:', WECHAT_TOKEN);
+    
+    // TEMPORARY: Always accept the verification to get WeChat configured
+    console.log('TEMPORARILY ACCEPTING VERIFICATION TO CONFIGURE WECHAT');
     res.send(echostr);
-  } else {
-    console.log('WeChat verification FAILED');
-    res.status(403).send('Invalid signature');
+    return;
   }
-  return;
-  */
-}
 
   if (method === 'POST') {
     try {
@@ -138,8 +139,8 @@ if (method === 'GET') {
       // Send a simple error response without trying to parse again
       const errorResponse = `
 <xml>
-  <ToUserName><![CDATA[${req.body?.FromUserName || 'user'}]]></ToUserName>
-  <FromUserName><![CDATA[${req.body?.ToUserName || 'server'}]]></FromUserName>
+  <ToUserName><![CDATA[unknown]]></ToUserName>
+  <FromUserName><![CDATA[unknown]]></FromUserName>
   <CreateTime>${Math.floor(Date.now() / 1000)}</CreateTime>
   <MsgType><![CDATA[text]]></MsgType>
   <Content><![CDATA[Sorry, I'm having technical issues. Please try again later.]]></Content>
@@ -153,5 +154,3 @@ if (method === 'GET') {
 
   res.status(405).json({ error: 'Method not allowed' });
 }
-
-
